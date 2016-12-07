@@ -317,7 +317,7 @@ def run_trial(trialnum,enable_react=''):
     hn=[];
     src_rate=6000; # in Kbps
     for h in fab.env.hosts: 
-        fab.execute(run_react,src_rate,enable_react)
+	fab.execute(run_react,bw_req=src_rate,enable_react='YES',hosts=h)
 	h=h.split('.',1)[0]
 	hn.append(h)
     print hn

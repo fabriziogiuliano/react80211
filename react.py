@@ -16,7 +16,7 @@ ieee80211_stats={}
 ieee80211_stats_={}
 pkt_stats={}
 C=1
-CLAIM_CAPACITY=0.8 # TEST 3,4,bis,5wrong, CLAIM=0.8 TEST1,2 CLAIM_CAPACITY=1 TEST6 CLAIM_CAPACITY=1
+CLAIM_CAPACITY=0.7 # TEST 3,4,bis,5wrong, CLAIM=0.8 TEST1,2 CLAIM_CAPACITY=1 TEST6 CLAIM_CAPACITY=1
 mon_iface="mon0"
 t_tx=float(time.time())
 debug=False
@@ -29,7 +29,7 @@ rts_count_=0
 starttime=time.time()
 
 
-MAX_THR=5140 #kbps
+MAX_THR=4840 #kbps
 rate=0; #APP RATE
 
 """
