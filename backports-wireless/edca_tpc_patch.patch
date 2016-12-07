@@ -1,0 +1,435 @@
+commit e07c9c865a7c92e9e37ff02677014e21c1393f99
+Author: Robat <robat@harry>
+Date:   Tue Feb 2 14:53:54 2016 +0100
+
+    TPC Piotr patch
+
+diff --git a/backports-20150923/drivers/net/wireless/ath/ath9k/ath9k.h b/backports-20150923/drivers/net/wireless/ath/ath9k/ath9k.h
+index b12cbae..375593b 100644
+--- a/backports-20150923/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/backports-20150923/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -951,6 +951,14 @@ void ath_ant_comb_scan(struct ath_softc *sc, struct ath_rx_status *rs);
+ 
+ #define ATH9K_NUM_CHANCTX  2 /* supports 2 operating channels */
+ 
++//per flow (flow mark) tx power list
++struct ath_per_flow_txpower {
++ 	struct list_head list;
++ 	u32 mark;
++ 	u8 power;
++ 	u32 rate;
++};	
++
+ struct ath_softc {
+ 	struct ieee80211_hw *hw;
+ 	struct device *dev;
+@@ -1030,6 +1038,9 @@ struct ath_softc {
+ 
+ 	struct ath_spec_scan_priv spec_priv;
+ 
++ 	bool per_flow_list_initialized;
++ 	struct ath_per_flow_txpower per_flow_txpower;
++
+ 	struct ieee80211_vif *tx99_vif;
+ 	struct sk_buff *tx99_skb;
+ 	bool tx99_state;
+diff --git a/backports-20150923/drivers/net/wireless/ath/ath9k/debug.c b/backports-20150923/drivers/net/wireless/ath/ath9k/debug.c
+index 8959aab..ff70104 100644
+--- a/backports-20150923/drivers/net/wireless/ath/ath9k/debug.c
++++ b/backports-20150923/drivers/net/wireless/ath/ath9k/debug.c
+@@ -401,6 +401,285 @@ static const struct file_operations fops_antenna_diversity = {
+ 	.llseek = default_llseek,
+ };
+ 
++static ssize_t read_file_txq_params(struct file *file, char __user *user_buf,
++ 				 size_t count, loff_t *ppos)
++ {
++ 	struct ath_softc *sc = file->private_data;
++ 	struct ath_hw *ah = sc->sc_ah;
++ 	struct ath_txq *txq;
++ 	struct ath9k_tx_queue_info qi;
++ 	unsigned int len = 0;
++ 	const unsigned int size = 1024;
++ 	ssize_t retval = 0;
++ 	char *buf;
++ 	int i;
++ 	int qnum;
++ 	static const char *qname[4] = {
++ 		"VO", "VI", "BE", "BK"
++ 	};
++ 
++ 
++ 	printk("read_file_txq_params test \n");
++ 
++ 	buf = kzalloc(size, GFP_KERNEL);
++ 	if (buf == NULL)
++ 		return -ENOMEM;
++ 
++ 	for (i = 0; i < IEEE80211_NUM_ACS; i++) {
++ 		txq = sc->tx.txq_map[i];
++ 		qnum = txq->axq_qnum;
++ 		len += scnprintf(buf + len, size - len, "(%s):  ", qname[i]);
++ 		BUG_ON(sc->tx.txq[qnum].axq_qnum != qnum);
++ 		ath9k_hw_get_txq_props(ah, qnum, &qi);
++ 		
++ 		len += scnprintf(buf + len, size - len, "%s: %d ", "qnum", qnum);		
++ 		len += scnprintf(buf + len, size - len, "%s: %d ", "aifs", qi.tqi_aifs);
++ 		len += scnprintf(buf + len, size - len, "%s: %d ", "cwmin", qi.tqi_cwmin);
++ 		len += scnprintf(buf + len, size - len, "%s: %d ", "cwmax", qi.tqi_cwmax);
++ 		len += scnprintf(buf + len, size - len, "%s: %d ", "burstTime", qi.tqi_burstTime);
++ 		len += scnprintf(buf + len, size - len, "%s: %d\n", "readyTime", qi.tqi_readyTime);
++ 	}
++ 
++ 	if (len > size)
++ 		len = size;
++ 
++ 	retval = simple_read_from_buffer(user_buf, count, ppos, buf, len);
++ 	kfree(buf);
++ 
++ 	return retval;
++ }
++ 
++ static ssize_t write_file_txq_params(struct file *file, const char __user *user_buf,
++ 				 size_t count, loff_t *ppos)
++ {
++ 	/* Usage:
++ 	To print current values use :
++ 	cat /sys/kernel/debug/ieee80211/phy0/ath9k/txq_params 
++ 
++ 	Write new parameters with echo:
++ 	echo "0 1 1 3 0" > /sys/kernel/debug/ieee80211/phy0/ath9k/txq_params 
++ 	
++ 	Proper sequence is : "qumId aifs cwmin cwmax burst"
++ 
++ 	Available parameter values:
++ 	- AIFS  = < 1 ... 255 >
++ 	- cwMin = { 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023 }
++ 	- cwMax = { 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023 }
++ 	- burst = < 0.0 ... 999.0 >
++ 	*/
++ 	
++ 	struct ath_softc *sc = file->private_data;
++ 	char buf[32];
++ 	int error = 0;
++ 	ssize_t len;
++ 
++ 	char a_delim = '\040';
++ 	char valbuf[5][32] = {{0}};
++ 	unsigned int qnum, aifs, cwmin, cwmax, burst;
++ 	int positionIndex = 0;
++ 	int i = 0;
++ 	int j = 0;
++ 	struct ath9k_tx_queue_info qi;
++ 
++ 	memset(&valbuf, 0, sizeof(valbuf));
++ 
++ 	len = min(count, sizeof(buf) - 1);
++ 	if (copy_from_user(buf, user_buf, len))
++ 		return -EFAULT;
++ 
++ 	buf[len] = '\0';
++ 
++ 	printk("write_file_txq_params\n");
++ 	printk("Passed args: %s", buf);
++ 
++ 	for(i = 0; i < len; i++)
++ 	{
++ 		valbuf[positionIndex][j] = buf[i];
++ 		if (a_delim == buf[i])
++         {
++         	valbuf[positionIndex][j] = '\0';
++         	j=0;
++             positionIndex++;
++         } else {
++         	j++;
++         }
++ 	}
++ 
++     kstrtouint(valbuf[0], 0, &qnum);
++ 	kstrtouint(valbuf[1], 0, &aifs);
++ 	kstrtouint(valbuf[2], 0, &cwmin);
++ 	kstrtouint(valbuf[3], 0, &cwmax);
++ 	kstrtouint(valbuf[4], 0, &burst);
++ 
++ 	printk("Parsed args qnum : %d aifs : %d cwmin : %d cwmax : %d burst : %d \n", \
++ 	 		qnum, aifs, cwmin, cwmax, burst);
++ 
++ 	error = ath9k_hw_get_txq_props(sc->sc_ah, qnum, &qi);
++ 	printk("ath9k_hw_get_txq_props RetVal: %d (1 - OK) \n",error);
++ 	qi.tqi_aifs = aifs;
++ 	qi.tqi_cwmin = cwmin;
++ 	qi.tqi_cwmax = cwmax;
++ 	qi.tqi_burstTime = burst;
++ 	error = ath_txq_update(sc, qnum, &qi);
++ 	printk("ath_txq_update RetVal: %d ( 0 - OK) \n",error);
++ 
++ 	return count;
++ }
++ 
++ static const struct file_operations fops_txq_params = {
++ 	.read = read_file_txq_params,
++ 	.write = write_file_txq_params,
++ 	.open = simple_open,
++ 	.owner = THIS_MODULE,
++ };
++ 
++ 
++ static ssize_t read_file_per_flow_tx_power(struct file *file, char __user *user_buf,
++ 				 size_t count, loff_t *ppos)
++ {
++ 	struct ath_softc *sc = file->private_data;
++ 	
++ 	struct ath_per_flow_txpower *per_flow_txpower_list = &sc->per_flow_txpower;
++ 	struct ath_per_flow_txpower *tmp;
++ 
++ 	unsigned int len = 0;
++ 	const unsigned int size = 1024;
++ 	ssize_t retval = 0;
++ 	char *buf;
++ 
++ 	buf = kzalloc(size, GFP_KERNEL);
++ 	if (buf == NULL)
++ 		return -ENOMEM;
++ 
++ 
++ 	len += scnprintf(buf + len, size - len, "%s", "Per-flow TxPower list\n");		
++     list_for_each_entry(tmp, &((*per_flow_txpower_list).list), list) {
++         len += scnprintf(buf + len, size - len, "%s: %d ", "Mark", tmp->mark);
++         len += scnprintf(buf + len, size - len, "%s: %d ", "Power", tmp->power);
++         len += scnprintf(buf + len, size - len, "%s: %d\n", "Rate", tmp->rate);
++     }
++ 
++ 	if (len > size)
++ 		len = size;
++ 
++ 	retval = simple_read_from_buffer(user_buf, count, ppos, buf, len);
++ 	kfree(buf);
++ 
++ 	return retval;
++ }
++ 
++ static ssize_t write_file_per_flow_tx_power(struct file *file, const char __user *user_buf,
++ 				 size_t count, loff_t *ppos)
++ {
++ 	struct ath_softc *sc = file->private_data;
++ 	struct ath_per_flow_txpower *per_flow_txpower_list = &sc->per_flow_txpower;
++ 	struct ath_per_flow_txpower *tmp, *tmp0;
++ 	struct list_head *pos, *q;
++ 
++ 	char buf[32];
++ 	ssize_t len;
++ 
++ 	char a_delim = '\040';
++ 	char valbuf[3][32] = {{0}};
++ 	int mark, power, rate;
++ 	int positionIndex = 0;
++ 	int i = 0;
++ 	int j = 0;
++ 	bool newEntry = true;
++ 
++ 	memset(&valbuf, 0, sizeof(valbuf));
++ 
++ 	len = min(count, sizeof(buf) - 1);
++ 	if (copy_from_user(buf, user_buf, len))
++ 		return -EFAULT;
++ 
++ 	buf[len] = '\0';
++ 
++ 	printk("write_file_per_flow_tx_power\n");
++ 	printk("Passed args: %s", buf);
++ 
++ 	for(i = 0; i < len; i++)
++ 	{
++ 		valbuf[positionIndex][j] = buf[i];
++ 		if (a_delim == buf[i])
++         {
++         	valbuf[positionIndex][j] = '\0';
++         	j=0;
++             positionIndex++;
++         } else {
++         	j++;
++         }
++ 	}
++ 
++        kstrtoint(valbuf[0], 0, &mark);
++ 	kstrtouint(valbuf[1], 0, &power);
++ 	kstrtouint(valbuf[2], 0, &rate);
++ 
++ 	printk("Parsed args Mark : %d TxPower : %d Rate : %d \n", \
++ 	 		mark, power, rate);
++ 
++ 	if ( mark == 0 )
++ 	{
++ 		//clean per-flow-tx-table
++ 		list_for_each_safe(pos, q, &(per_flow_txpower_list->list))
++ 		{
++ 			tmp = list_entry(pos, struct ath_per_flow_txpower, list);
++ 			list_del(pos);
++ 			kfree(tmp);
++ 		}
++ 	}
++ 	else if (mark < 0)
++ 	{
++ 		//remove -mark entry
++ 		mark = -mark;
++ 		list_for_each_safe(pos, q, &(per_flow_txpower_list->list))
++ 		{
++ 			tmp = list_entry(pos, struct ath_per_flow_txpower, list);
++ 			if(tmp->mark == mark)
++ 			{
++ 				list_del(pos);
++ 				kfree(tmp);
++ 			}
++ 		}
++ 	} 
++ 	else
++ 	{
++ 		//check if entry exist, if yes update
++ 		list_for_each_entry(tmp, &(per_flow_txpower_list->list), list) 
++ 		{
++ 			if(tmp->mark == mark)
++ 			{
++ 				tmp->power = power;
++ 				tmp->rate = rate;	
++ 				newEntry = false;
++ 				break;
++ 			}
++ 	    }
++ 		
++ 		//add new entry to list
++ 	    if (newEntry) {
++ 	    	tmp0 = (struct ath_per_flow_txpower *)kmalloc(sizeof(struct ath_per_flow_txpower), GFP_KERNEL);
++ 			tmp0->mark = mark;
++ 			tmp0->power = power;
++ 			tmp0->rate = rate;
++ 			printk(KERN_INFO "Mark: %d; Power: %d; Rate: %d\n", tmp0->mark, tmp0->power, tmp0->rate);
++ 			list_add(&(tmp0->list), &(per_flow_txpower_list->list));
++ 	    }
++ 	}
++ 
++ 
++ 	
++ 	return count;
++ }
++ 
++ 
++ static const struct file_operations fops_per_flow_tx_power = {
++ 	.read = read_file_per_flow_tx_power,
++ 	.write = write_file_per_flow_tx_power,
++ 	.open = simple_open,
++ 	.owner = THIS_MODULE,
++ };
++
+ static int read_file_dma(struct seq_file *file, void *data)
+ {
+ 	struct ieee80211_hw *hw = dev_get_drvdata(file->private);
+@@ -1392,6 +1671,13 @@ int ath9k_init_debug(struct ath_hw *ah)
+ #endif
+ 	debugfs_create_file("tpc", S_IRUSR | S_IWUSR,
+ 			    sc->debug.debugfs_phy, sc, &fops_tpc);
++	//SET QUEUE params
++ 	debugfs_create_file("txq_params", S_IRUSR | S_IWUSR,
++ 			    sc->debug.debugfs_phy, sc, &fops_txq_params);
++ 
++ 	//SET Per-flow (based on flow mark) txPower
++ 	debugfs_create_file("per_flow_tx_power", S_IRUSR | S_IWUSR,
++ 			    sc->debug.debugfs_phy, sc, &fops_per_flow_tx_power);
+ 
+ 	return 0;
+ }
+diff --git a/backports-20150923/drivers/net/wireless/ath/ath9k/hw.c b/backports-20150923/drivers/net/wireless/ath/ath9k/hw.c
+index a04b5d4..002c11a 100644
+--- a/backports-20150923/drivers/net/wireless/ath/ath9k/hw.c
++++ b/backports-20150923/drivers/net/wireless/ath/ath9k/hw.c
+@@ -459,7 +459,7 @@ static void ath9k_hw_init_defaults(struct ath_hw *ah)
+ 	ah->power_mode = ATH9K_PM_UNDEFINED;
+ 	ah->htc_reset_init = true;
+ 
+-	ah->tpc_enabled = false;
++	ah->tpc_enabled = true;
+ 
+ 	ah->ani_function = ATH9K_ANI_ALL;
+ 	if (!AR_SREV_9300_20_OR_LATER(ah))
+diff --git a/backports-20150923/drivers/net/wireless/ath/ath9k/init.c b/backports-20150923/drivers/net/wireless/ath/ath9k/init.c
+index 65f136d..07e7b73 100644
+--- a/backports-20150923/drivers/net/wireless/ath/ath9k/init.c
++++ b/backports-20150923/drivers/net/wireless/ath/ath9k/init.c
+@@ -539,6 +539,15 @@ static int ath9k_init_softc(u16 devid, struct ath_softc *sc,
+ 	int ret = 0, i;
+ 	int csz = 0;
+ 
++	struct ath_per_flow_txpower *per_flow_txpower_list = &sc->per_flow_txpower;
++ 	//per flow txpower list
++ 	sc->per_flow_list_initialized = 0;
++ 	if(sc->per_flow_list_initialized == 0)
++ 	{
++ 		INIT_LIST_HEAD(&per_flow_txpower_list->list);
++ 		sc->per_flow_list_initialized = 1;
++ 	}
++
+ 	ah = devm_kzalloc(sc->dev, sizeof(struct ath_hw), GFP_KERNEL);
+ 	if (!ah)
+ 		return -ENOMEM;
+diff --git a/backports-20150923/drivers/net/wireless/ath/ath9k/xmit.c b/backports-20150923/drivers/net/wireless/ath/ath9k/xmit.c
+index b527b4a..f1d1272 100644
+--- a/backports-20150923/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/backports-20150923/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1085,6 +1085,40 @@ void ath_update_max_aggr_framelen(struct ath_softc *sc, int queue, int txop)
+ 	}
+ }
+ 
++static u8 ath_overwrite_rate_txpower(struct ath_softc *sc, struct ath_buf *bf,
++ 			       u8 rateidx, bool is_40, bool is_cck, u8 oldPower)
++ {
++ 	u8 max_power = oldPower;
++ 	struct sk_buff *skb;
++ 	struct ath_frame_info *fi;
++ 	struct ieee80211_tx_info *info;
++ 	struct ath_hw *ah = sc->sc_ah;
++ 	u32 mymark;
++ 	struct ath_per_flow_txpower *per_flow_txpower_list = &sc->per_flow_txpower;
++ 	struct ath_per_flow_txpower *tmp;
++ 	
++ 	if (sc->tx99_state || !ah->tpc_enabled)
++ 		return MAX_RATE_POWER;
++ 
++ 	skb = bf->bf_mpdu;
++ 	fi = get_frame_info(skb);
++ 	info = IEEE80211_SKB_CB(skb);
++ 
++ 
++ 	mymark = skb->mark;
++ 
++ 	list_for_each_entry(tmp, &(per_flow_txpower_list->list), list) 
++ 	{
++ 		if(tmp->mark == mymark)
++ 		{
++ 			max_power = tmp->power;
++ 			break;
++ 		}
++     }
++ 
++ 	return max_power;
++ }
++
+ static u8 ath_get_rate_txpower(struct ath_softc *sc, struct ath_buf *bf,
+ 			       u8 rateidx, bool is_40, bool is_cck)
+ {
+@@ -1231,6 +1265,8 @@ static void ath_buf_set_rate(struct ath_softc *sc, struct ath_buf *bf,
+ 
+ 			info->txpower[i] = ath_get_rate_txpower(sc, bf, rix,
+ 								is_40, false);
++			info->txpower[i] = ath_overwrite_rate_txpower(sc, bf, rix,
++							is_40, false, info->txpower[i]);
+ 			continue;
+ 		}
+ 
+@@ -1262,6 +1298,8 @@ static void ath_buf_set_rate(struct ath_softc *sc, struct ath_buf *bf,
+ 		is_cck = IS_CCK_RATE(info->rates[i].Rate);
+ 		info->txpower[i] = ath_get_rate_txpower(sc, bf, rix, false,
+ 							is_cck);
++		info->txpower[i] = ath_overwrite_rate_txpower(sc, bf, rix, false,
++ 							is_cck, info->txpower[i]);
+ 	}
+ 
+ 	/* For AR5416 - RTS cannot be followed by a frame larger than 8K */
