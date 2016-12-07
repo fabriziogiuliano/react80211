@@ -315,8 +315,9 @@ def run_trial(trialnum,enable_react=''):
     fab.execute(stop_iperf)
     fab.local('sleep 3')
     hn=[];
+    src_rate=6000; # in Kbps
     for h in fab.env.hosts: 
-        fab.execute(run_react,6000,'YES')
+        fab.execute(run_react,src_rate,enable_react)
 	h=h.split('.',1)[0]
 	hn.append(h)
     print hn
@@ -326,7 +327,6 @@ def run_trial(trialnum,enable_react=''):
     fab.execute(start_iperf_server,trialnum, hn[1],hn[2], 50023, hosts=[fab.env.hosts[2]])
     fab.local('sleep 3')
     duration=180
-    src_rate=6000; # in Kbps
     fab.execute(run_iperf_client, '192.168.0.2', duration, 50012, src_rate,enable_react,hosts=[fab.env.hosts[0]])
     fab.execute(run_iperf_client, '192.168.0.3', duration, 50023, src_rate,enable_react,hosts=[fab.env.hosts[1]])
     fab.execute(run_iperf_client, '192.168.0.2', duration, 50032, src_rate,enable_react,hosts=[fab.env.hosts[2]])
