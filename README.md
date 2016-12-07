@@ -7,14 +7,18 @@
 #INSTALLATION
 
 cd backports-wireless
-sh build.sh                #first time
-sh build.sh --load-module  #if build succesfully
+
+sh build.sh #first time
+
+sh build.sh --load-module #if build succesfully
+
 cd ../
 
 #setup network
 fab -u fabrizio network:freq=5180
 #run REACT 
 mkdir data #first time
+
 fab -u $(whoami) run_react:bw_req=6000,enable_react='YES'
 #run IPERF TEST
 fab -u $(whoami) run_trial:'mytest','YES'
