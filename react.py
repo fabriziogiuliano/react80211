@@ -83,39 +83,6 @@ def get_ieee80211_stats(iface,sleeptime):
 	ieee80211_stats_diff=json.loads(str(out))
 		#pkt_stats=ieee80211_stats_diff
 	return ieee80211_stats_diff
-#TODO: follow approach seems to be too slow and grab wrong values
-	
-	"""
-	global pkt_stats
-	phy=getPHY(iface);
-	stats_path="/sys/kernel/debug/ieee80211/{}/statistics/*".format(phy)
-	i=0
-	stats_file_list=glob.glob(stats_path)
-	f={}
-	ieee80211_stats_diff={}
-	for ff in stats_file_list:
-		f[i] = open(ff, 'r')
-		i+=1;
-	while True:
-		for i in range(0,len(f)):
-			key=str.split(stats_file_list[i],"/")[-1]
-			try:
-				val=int(f[i].read())
-			except Exception,err:
-				val=0
-			ieee80211_stats[key]=val
-		
-		if ieee80211_stats_ :
-			for key in ieee80211_stats:
-				ieee80211_stats_diff[key]=ieee80211_stats[key]-ieee80211_stats_[key]
-				ieee80211_stats_[key]=ieee80211_stats[key]
-		else:
-			for key in ieee80211_stats:
-				ieee80211_stats_[key]=ieee80211_stats[key];
-		pkt_stats=ieee80211_stats_diff
-	#return ieee80211_stats_diff
-	
-	"""
 
 """
 Compute txtime theoretical value for given:
