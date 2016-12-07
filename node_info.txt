@@ -1,10 +1,11 @@
 #hostname,driver,txpower
+clapton.local,ath9k,4
 #nodezotacD6.applan.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,4
 #nodezotacG6.applan.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,4
 #nodezotacJ3.applan.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,4
 #nodezotacB3.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,1
-nodezotacB4.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,1
-nodezotacD3.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,4
-nodezotacI3.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,4
+#nodezotacB4.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,1
+#nodezotacD3.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,4
+#nodezotacI3.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,4
 #nodezotacK3.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,1
 #nodezotacK4.react80211.cognitiveradio.wilab2.ilabt.iminds.be,ath9k,1
