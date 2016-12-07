@@ -181,11 +181,11 @@ def txtime_theor(v80211,bitrate,bw,pkt_size):
 
     return [tslot, tx_time_theor, t_rts, t_ack] 
 	
-def update_cw(iface,i_time,enable_react,sleep_time):
+def update_cw(iface,i_time,enable_react,sleep_time,data_path):
 
 	while True:
 		if 1:
-			update_cw_decision(iface,enable_react,sleep_time);
+			update_cw_decision(iface,enable_react,sleep_time,data_path);
 		time.sleep(sleep_time - ((time.time() - starttime) % sleep_time))
 
 """
@@ -208,7 +208,7 @@ def setCW(iface,qumId,aifs,cwmin,cwmax,burst):
 """
 update CW decision based on ieee80211 stats values and virtual channel freezing estimation
 """
-def update_cw_decision(iface,enable_react,sleep_time):
+def update_cw_decision(iface,enable_react,sleep_time,data_path):
 	#get stats
 	global my_mac
 	global cw
@@ -298,7 +298,7 @@ def update_cw_decision(iface,enable_react,sleep_time):
 		out_val="%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (time.time(),dd,data_count,rts_count,busytx2,gross_rate,avg_tx,freeze2,freeze_predict,tx_goal,I,cw,cw_,psucc,thr)
 		
 		my_ip=str(netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr'])
-		out_file="{}.csv".format(my_ip);
+		out_file="{}/{}.csv".format(data_path,my_ip);
 		with open(out_file, "a") as myfile:
 			myfile.write(out_val+"\n")
 		
@@ -400,8 +400,8 @@ def usage(in_opt,ext_in_opt):
 	print("input error: here optionlist: \n{0} --> {1}\n".format(in_opt,str(ext_in_opt)))
 
 def main():
-	ext_in_opt=["help", "iface=","tdelay=", "iperf_rate=", "enable_react="];
-	in_opt="hi:t:r:e"	
+	ext_in_opt=["help", "iface=","tdelay=", "iperf_rate=", "enable_react=", "--output_path"];
+	in_opt="hi:t:r:eo:"	
 	try:
 	    opts, args = getopt.getopt(sys.argv[1:], in_opt, ext_in_opt)
 	except getopt.GetoptError as err:
@@ -413,6 +413,7 @@ def main():
 	iface='wlan0';
 	iperf_rate=0;
 	enable_react=False
+	data_path=""
 
 	script_source='\n \
 	#! /bin/bash \n \
@@ -454,18 +455,22 @@ def main():
 	       iperf_rate = float(a)
 	    if o  in ("-e", "--enable_react"):
 	       enable_react=True
+	    if o  in ("-o", "--output_path"):
+		data_path=str(a)
 	    elif o in ("-h", "--help"):
 		usage()
 		sys.exit()
 	#INIT REACT INFO
-
 	f_name='/tmp/ieee_stats.sh';
         ff = open(f_name, 'w')
         ff.write(script_source)
 	ff.close()
 
 	my_ip=str(netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr'])
-	out_file="{}.csv".format(my_ip);
+	if (not os.path.exists(data_path)):
+		print "{} does not exists, please create it".format(data_path)
+		return
+	out_file="{}/{}.csv".format(data_path,my_ip);
 	with open(out_file, "w") as myfile:
 		myfile.write("")
 		myfile.close()
@@ -483,7 +488,7 @@ def main():
 		# thread update pkt statistics
 		#thread.start_new_thread( get_ieee80211_stats,(iface, i_time) )
 		#
-		thread.start_new_thread(update_cw,(iface,i_time,enable_react,1))
+		thread.start_new_thread(update_cw,(iface,i_time,enable_react,1,data_path))
 
 	except Exception, err:
 		print err

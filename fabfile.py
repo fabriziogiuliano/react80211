@@ -28,6 +28,7 @@ neigh_list=[]
 #fabric.state.output['running'] = False
 #fab.output_prefix = False
 project_path=path=os.getcwd()
+data_path="{}/{}".format(project_path,"data")
 
 
 @fab.task
@@ -265,9 +266,9 @@ def stop_iperf_server():
 @fab.task
 def run_iperf_client(server, duration,iperf_port,src_rate=6000,enable_react='NO'):
 	enable_react=enable_react.upper();
+	"""
 	if enable_react=='YES':
 		fab.run('sudo bash -c "echo {0} > /sys/kernel/debug/ieee80211/phy0/source_rate" '.format(src_rate))
-	"""
 	else:
 		if enable_react=='NO':
 			with fab.settings(warn_only=True):
@@ -287,13 +288,13 @@ def stop_react():
 
 @fab.task
 @fab.parallel
-def run_react(bw_req=6000,enable_react='NO'):
+def run_react(bw_req=6000,enable_react='NO',data_path=data_path):
 	react_flag=''
 	if enable_react=='YES':
 		react_flag='-e'
 	with fab.settings(warn_only=True):
 		stop_react();
-		fab.sudo('nohup {}/react.py -i wlan0 -t 0.1 -r {} {} > react.out 2> react.err < /dev/null &'.format(project_path,bw_req,react_flag), pty=False)
+		fab.sudo('nohup {}/react.py -i wlan0 -t 0.1 -r {} {} -o {} > react.out 2> react.err < /dev/null &'.format(project_path,bw_req,react_flag,data_path), pty=False)
 
 
 
