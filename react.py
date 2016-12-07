@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 from scapy.all import *
 import getopt, sys
 import time
@@ -76,7 +78,8 @@ def get_ieee80211_stats(iface,sleeptime):
 	global pkt_stats
 	phy=getPHY(iface);
 	#while True:
-	out = subprocess.Popen(["bash","ieee_stats.sh",phy,"{}".format(sleeptime)], stdout=subprocess.PIPE).communicate()[0]
+	out = subprocess.Popen(["bash","/tmp/ieee_stats.sh",phy,"{}".format(sleeptime)], stdout=subprocess.PIPE).communicate()[0]
+	out=out.replace("'", "\"")
 	ieee80211_stats_diff=json.loads(str(out))
 		#pkt_stats=ieee80211_stats_diff
 	return ieee80211_stats_diff
@@ -295,7 +298,6 @@ def update_cw_decision(iface,enable_react,sleep_time):
 		out_val="%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (time.time(),dd,data_count,rts_count,busytx2,gross_rate,avg_tx,freeze2,freeze_predict,tx_goal,I,cw,cw_,psucc,thr)
 		
 		my_ip=str(netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr'])
-		my_ip.replace(".","_")	
 		out_file="{}.csv".format(my_ip);
 		with open(out_file, "a") as myfile:
 			myfile.write(out_val+"\n")
@@ -411,6 +413,38 @@ def main():
 	iface='wlan0';
 	iperf_rate=0;
 	enable_react=False
+
+	script_source='\n \
+	#! /bin/bash \n \
+	#phy_iface="phy0" \n \
+	phy_iface="$1" \n \
+	sleeptime="$2" \n \
+	labels=$(ls /sys/kernel/debug/ieee80211/${phy_iface}/statistics/) \n \
+	arr_label=($labels) \n \
+	#sleeptime=2 \n \
+	line="" \n \
+	stats=$(cat /sys/kernel/debug/ieee80211/${phy_iface}/statistics/*) \n \
+	arr_stats_start=($stats); \n \
+	#sleep $sleeptime \n \
+	#stats=$(cat /sys/kernel/debug/ieee80211/${phy_iface}/statistics/*) \n \
+	#arr_stats_stop=($stats); \n \
+	printf "{" \n \
+	for ((i=0;i<${#arr_label[@]} ;i++)) { \n \
+	#diff=$(( ${arr_stats_stop[$i]} - ${arr_stats_start[$i]} )); \n \
+	diff=${arr_stats_start[$i]} \n \
+	if [ $i -eq $(( ${#arr_label[@]} - 1 )) ]; then \n \
+		printf "\'%s\' : %s " "${arr_label[$i]}"  "$diff" \n \
+	else \n \
+		printf "\'%s\' : %s, " "${arr_label[$i]}" "$diff" \n \
+	fi \n \
+	} \n \
+	printf "}" \n \
+	ack_fail=$(( ${arr_stats_stop[0]} - ${arr_stats_start[0]} )) \n \
+	tx_completed=$(( ${arr_stats_stop[12]} - ${arr_stats_start[12]} )) \n \
+	rts_failed=$(( ${arr_stats_stop[2]} - ${arr_stats_start[2]} )) \n \
+	rts_success=$(( ${arr_stats_stop[3]} - ${arr_stats_start[3]} )) \n \
+	'
+
 	for o, a in opts:
 	    if o in ("-i", "--iface"):
 		iface = a
@@ -424,6 +458,20 @@ def main():
 		usage()
 		sys.exit()
 	#INIT REACT INFO
+
+	f_name='/tmp/ieee_stats.sh';
+        ff = open(f_name, 'w')
+        ff.write(script_source)
+	ff.close()
+
+	my_ip=str(netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr'])
+	out_file="{}.csv".format(my_ip);
+	with open(out_file, "w") as myfile:
+		myfile.write("")
+		myfile.close()
+
+
+
 	init(iface);
 	try:
 

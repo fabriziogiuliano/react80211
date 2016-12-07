@@ -281,13 +281,21 @@ def run_iperf_client(server, duration,iperf_port,src_rate=6000,enable_react='NO'
 
 @fab.task
 @fab.parallel
-def run_react(bw_req=6000,enable_react='NO'):
+def stop_react():
+	with fab.settings(warn_only=True):
+		fab.sudo("kill -9 $(ps aux | grep -e react.py | awk '{print $2}')")
 
+@fab.task
+@fab.parallel
+def run_react(bw_req=6000,enable_react='NO'):
+	react_flag=''
 	if enable_react=='YES':
-		fab.sudo("nohup sudo python react.py -i wlan0 -t 0.1 -r {} -e ".format(project_path,bw_req))
-	else:
-		if enable_react=='NO':
-			fab.run("nohup sudo python react.py -i wlan0 -t 0.1 -r 6000 &".format(project_path))
+		react_flag='-e'
+	with fab.settings(warn_only=True):
+		stop_react();
+		fab.sudo('nohup {}/react.py -i wlan0 -t 0.1 -r {} {} > react.out 2> react.err < /dev/null &'.format(project_path,bw_req,react_flag), pty=False)
+
+
 
 
 @fab.task
