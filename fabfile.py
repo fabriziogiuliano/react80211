@@ -95,6 +95,20 @@ def associate_mesh(driver,iface,mesh_id,freq,txpower,rate,ip_addr,rts='off'):
 
 @fab.task
 @fab.parallel
+def setmonitor(driver="ath9k",iface="wlan0",freq="5180",rate=6,txpower="10"):
+	if driver=="ath9k":
+		fab.sudo('rmmod ath9k ath9k_common ath9k_hw ath mac80211 cfg80211')
+		fab.sudo('cd {0}/backports-wireless/; bash ./build.sh --load-module; cd {0} '.format(project_path))
+		iface_mon='mon0';
+		fab.sudo('iw dev {0} interface add {1} type monitor'.format(iface,iface_mon));
+		fab.sudo('ifconfig {0} up'.format(iface_mon));
+		fab.sudo('iwconfig {} freq {}M'.format(iface_mon,freq))
+		fab.sudo('ifconfig {0} up'.format(iface));
+		fab.sudo('iwconfig {0} rate {1}M fixed'.format(iface,rate))
+		fab.sudo('iwconfig {} txpower {}dbm'.format(iface,txpower))
+
+@fab.task
+@fab.parallel
 
 # Ad-hoc node association
 #echo "usage $0 <iface> <essid> <freq> <power> <rate> <ip> <mac> <reload[1|0]>"
@@ -373,6 +387,33 @@ def toc():
         print "Elapsed time is " + str(time.time() - startTime_for_tictoc) + " seconds."
     else:
         print "Toc: start time not set"
+
+
+@fab.task
+@fab.parallel
+def stop_link_test():
+	with fab.settings(warn_only=True):
+		fab.sudo("kill -9 $(ps aux | grep -e link_test.py | awk '{print $2}')")
+
+#TODO: get experiment output 
+@fab.task
+@fab.parallel
+def neighbor_test(sender_id):
+	
+	host_id=fab.env.hosts.index(fab.env.host)
+	#fab.execute(stop_link_test)
+	if int(host_id) == int(sender_id):
+		fab.local ('sleep 3');
+		fab.sudo('nohup {0}/link_test.py -e > link_test_sender-{1}.out 2> link_test_sender-{1}.err < /dev/null &'.format(project_path,host_id), pty=False)
+
+	else:
+		fab.sudo('nohup {0}/link_test.py  > link_test-{1}.out 2> link_test-{1}.err < /dev/null &'.format(project_path,host_id), pty=False)
+	
+	fab.local('sleep 10')
+	fab.execute(stop_link_test)
+
+	
+	
 
 
 @fab.task
