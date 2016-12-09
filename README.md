@@ -34,3 +34,7 @@ logs are collected inside data/ directory
     1481127063.2013,1.0000,187.0000,234.0000,0.3980,0.2667,0.0017,0.5356,0.6525,156.7678,0.0000,114.5603,127.0000,0.7991,2.1991
     1481127064.2528,1.0000,75.0000,99.0000,0.1599,0.2667,0.0016,0.7835,0.6839,165.1249,0.0000,66.4639,63.0000,0.7576,0.8820
 
+# TODO
+add link estimation tests
+	python link_test.py # receive and collect success probability
+	python link_test.py -e #send broadcast pkt
