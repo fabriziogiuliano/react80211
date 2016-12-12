@@ -407,12 +407,16 @@ def neighbor_test(sender_id):
 		fab.sudo('nohup {0}/link_test.py -e > link_test_sender-{1}.out 2> link_test_sender-{1}.err < /dev/null &'.format(project_path,host_id), pty=False)
 
 	else:
-		fab.sudo('nohup {0}/link_test.py  > link_test-{1}.out 2> link_test-{1}.err < /dev/null &'.format(project_path,host_id), pty=False)
+		fab.sudo('nohup {0}/link_test.py -o {2}> link_test_sender-{1}.out 2> link_test_sender-{1}.err < /dev/null &'.format(project_path,host_id, data_path), pty=False)
 	
 	fab.local('sleep 10')
 	fab.execute(stop_link_test)
 
 	
+@fab.task
+def neighbor_trial():
+	host_id=fab.env.hosts.index(fab.env.host)
+	fab.execute(neighbor_test,host_id)
 	
 
 
