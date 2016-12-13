@@ -1,0 +1,196 @@
+set ns [new Simulator]
+source tb_compat.tcl
+ 
+
+set nodezotacB1 [$ns node]
+tb-fix-node $nodezotacB1 zotacB1
+tb-set-node-os $nodezotacB1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacD6 [$ns node]
+tb-fix-node $nodezotacD6 zotacD6
+tb-set-node-os $nodezotacD6 WISHFUL-DSS-ZOTAC 
+
+set nodezotacG6 [$ns node]
+tb-fix-node $nodezotacG6 zotacG6
+tb-set-node-os $nodezotacG6 WISHFUL-DSS-ZOTAC 
+
+
+set nodezotacB2 [$ns node]
+tb-fix-node $nodezotacB2 zotacB2
+tb-set-node-os $nodezotacB2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacE1 [$ns node]
+tb-fix-node $nodezotacE1 zotacE1
+tb-set-node-os $nodezotacE1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacH1 [$ns node]
+tb-fix-node $nodezotacH1 zotacH1
+tb-set-node-os $nodezotacH1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacJ6 [$ns node]
+tb-fix-node $nodezotacJ6 zotacJ6
+tb-set-node-os $nodezotacJ6 WISHFUL-DSS-ZOTAC 
+
+set nodezotacB3 [$ns node]
+tb-fix-node $nodezotacB3 zotacB3
+tb-set-node-os $nodezotacB3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacE2 [$ns node]
+tb-fix-node $nodezotacE2 zotacE2
+tb-set-node-os $nodezotacE2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacH2 [$ns node]
+tb-fix-node $nodezotacH2 zotacH2
+tb-set-node-os $nodezotacH2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacK1 [$ns node]
+tb-fix-node $nodezotacK1 zotacK1
+tb-set-node-os $nodezotacK1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacB4 [$ns node]
+tb-fix-node $nodezotacB4 zotacB4
+tb-set-node-os $nodezotacB4 WISHFUL-DSS-ZOTAC 
+
+set nodezotacE3 [$ns node]
+tb-fix-node $nodezotacE3 zotacE3
+tb-set-node-os $nodezotacE3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacH3 [$ns node]
+tb-fix-node $nodezotacH3 zotacH3
+tb-set-node-os $nodezotacH3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacK2 [$ns node]
+tb-fix-node $nodezotacK2 zotacK2
+tb-set-node-os $nodezotacK2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacC1 [$ns node]
+tb-fix-node $nodezotacC1 zotacC1
+tb-set-node-os $nodezotacC1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacE4 [$ns node]
+tb-fix-node $nodezotacE4 zotacE4
+tb-set-node-os $nodezotacE4 WISHFUL-DSS-ZOTAC 
+
+set nodezotacH4 [$ns node]
+tb-fix-node $nodezotacH4 zotacH4
+tb-set-node-os $nodezotacH4 WISHFUL-DSS-ZOTAC 
+
+set nodezotacK3 [$ns node]
+tb-fix-node $nodezotacK3 zotacK3
+tb-set-node-os $nodezotacK3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacC2 [$ns node]
+tb-fix-node $nodezotacC2 zotacC2
+tb-set-node-os $nodezotacC2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacF1 [$ns node]
+tb-fix-node $nodezotacF1 zotacF1
+tb-set-node-os $nodezotacF1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacH6 [$ns node]
+tb-fix-node $nodezotacH6 zotacH6
+tb-set-node-os $nodezotacH6 WISHFUL-DSS-ZOTAC 
+
+set nodezotacK4 [$ns node]
+tb-fix-node $nodezotacK4 zotacK4
+tb-set-node-os $nodezotacK4 WISHFUL-DSS-ZOTAC 
+
+set nodezotacC3 [$ns node]
+tb-fix-node $nodezotacC3 zotacC3
+tb-set-node-os $nodezotacC3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacF2 [$ns node]
+tb-fix-node $nodezotacF2 zotacF2
+tb-set-node-os $nodezotacF2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacI1 [$ns node]
+tb-fix-node $nodezotacI1 zotacI1
+tb-set-node-os $nodezotacI1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacK6 [$ns node]
+tb-fix-node $nodezotacK6 zotacK6
+tb-set-node-os $nodezotacK6 WISHFUL-DSS-ZOTAC 
+
+set nodezotacC4 [$ns node]
+tb-fix-node $nodezotacC4 zotacC4
+tb-set-node-os $nodezotacC4 WISHFUL-DSS-ZOTAC 
+
+set nodezotacF3 [$ns node]
+tb-fix-node $nodezotacF3 zotacF3
+tb-set-node-os $nodezotacF3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacI2 [$ns node]
+tb-fix-node $nodezotacI2 zotacI2
+tb-set-node-os $nodezotacI2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacL3 [$ns node]
+tb-fix-node $nodezotacL3 zotacL3
+tb-set-node-os $nodezotacL3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacC6 [$ns node]
+tb-fix-node $nodezotacC6 zotacC6
+tb-set-node-os $nodezotacC6 WISHFUL-DSS-ZOTAC 
+
+set nodezotacF4 [$ns node]
+tb-fix-node $nodezotacF4 zotacF4
+tb-set-node-os $nodezotacF4 WISHFUL-DSS-ZOTAC 
+
+set nodezotacI3 [$ns node]
+tb-fix-node $nodezotacI3 zotacI3
+tb-set-node-os $nodezotacI3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacM18 [$ns node]
+tb-fix-node $nodezotacM18 zotacM18
+tb-set-node-os $nodezotacM18 WISHFUL-DSS-ZOTAC 
+
+set nodezotacD1 [$ns node]
+tb-fix-node $nodezotacD1 zotacD1
+tb-set-node-os $nodezotacD1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacF6 [$ns node]
+tb-fix-node $nodezotacF6 zotacF6
+tb-set-node-os $nodezotacF6 WISHFUL-DSS-ZOTAC 
+
+set nodezotacI4 [$ns node]
+tb-fix-node $nodezotacI4 zotacI4
+tb-set-node-os $nodezotacI4 WISHFUL-DSS-ZOTAC 
+
+set nodezotacM20 [$ns node]
+tb-fix-node $nodezotacM20 zotacM20
+tb-set-node-os $nodezotacM20 WISHFUL-DSS-ZOTAC 
+
+set nodezotacD2 [$ns node]
+tb-fix-node $nodezotacD2 zotacD2
+tb-set-node-os $nodezotacD2 WISHFUL-DSS-ZOTAC 
+
+set nodezotacG1 [$ns node]
+tb-fix-node $nodezotacG1 zotacG1
+tb-set-node-os $nodezotacG1 WISHFUL-DSS-ZOTAC 
+
+set nodezotacI6 [$ns node]
+tb-fix-node $nodezotacI6 zotacI6
+tb-set-node-os $nodezotacI6 WISHFUL-DSS-ZOTAC 
+
+set nodezotacM22 [$ns node]
+tb-fix-node $nodezotacM22 zotacM22
+tb-set-node-os $nodezotacM22 WISHFUL-DSS-ZOTAC 
+
+set nodezotacD3 [$ns node]
+tb-fix-node $nodezotacD3 zotacD3
+tb-set-node-os $nodezotacD3 WISHFUL-DSS-ZOTAC 
+
+set nodezotacG3 [$ns node]
+tb-fix-node $nodezotacG3 zotacG3
+tb-set-node-os $nodezotacG3 WISHFUL-DSS-ZOTAC 
+
+
+set nodezotacD4 [$ns node]
+tb-fix-node $nodezotacD4 zotacD4
+tb-set-node-os $nodezotacD4 WISHFUL-DSS-ZOTAC 
+
+
+set nodezotacJ3 [$ns node]
+tb-fix-node $nodezotacJ3 zotacJ3
+tb-set-node-os $nodezotacJ3 WISHFUL-DSS-ZOTAC 
+$ns run
+

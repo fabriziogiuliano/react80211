@@ -21,6 +21,7 @@ import fabric
 import fabric.api as fab
 from fabric.api import hide, run, get
 import fabric.utils
+import json
 hosts_driver=[];
 hosts_txpower=[]
 neigh_list=[]
@@ -35,6 +36,22 @@ data_path="{}/{}".format(project_path,"data")
 @fab.parallel
 def install_python_deps():
 	fab.sudo("apt-get install python-scapy python-netifaces")
+
+host_mac_map={}
+
+@fab.task
+def get_HOST_MAC_map():
+	with fab.settings(hide('warnings'), hide=True, warn_only=True):
+		host_id=fab.env.hosts.index(fab.env.host)
+		my_str=fab.sudo("ifconfig wlan0 | grep HWaddr",pty=False)
+		my_mac=my_str.split()[-1]
+
+#		print "{}:{}".format(fab.env.host.split('.')[0].replace("nodezotac",""),my_mac)
+		host_mac_map[fab.env.host.split('.')[0].replace("nodezotac","")]=my_mac
+
+		with open("{}/host_mac_map.json".format(data_path), "w" ) as myfile:
+			myfile.write(json.dumps(host_mac_map))
+
 
 @fab.task
 def set_hosts(host_file):
@@ -392,32 +409,32 @@ def toc():
 @fab.task
 @fab.parallel
 def stop_link_test():
-	with fab.settings(warn_only=True):
-		fab.sudo("kill -9 $(ps aux | grep -e link_test.py | awk '{print $2}')")
+	with fab.settings(hide('warnings'), hide=True, warn_only=True):
+		fab.sudo("kill -9 $(ps aux | grep -e link_test.py | awk '{print $2}') > /dev/null")
 
 #TODO: get experiment output 
 @fab.task
+def neighbor_test():
+	
+	with fab.settings(warn_only=True):
+		host_id=fab.env.hosts.index(fab.env.host)
+		#if int(host_id) == int(sender_id):
+		fab.sudo('nohup {0}/link_test.py -e > /tmp/link_test_sender-{1}.out 2> /tmp/link_test_sender-{1}.err < /dev/null &'.format(project_path,host_id), pty=False)
+#		else:
+#			fab.sudo('nohup {0}/link_test.py -o {2}> /tmp/link_test_receiver-{1}.out 2> /tmp/link_test_receiver-{1}.err < /dev/null &'.format(project_path,host_id, data_path), pty=False)
+
+@fab.task
 @fab.parallel
-def neighbor_test(sender_id):
-	
-	host_id=fab.env.hosts.index(fab.env.host)
-	#fab.execute(stop_link_test)
-	if int(host_id) == int(sender_id):
-		fab.local ('sleep 3');
-		fab.sudo('nohup {0}/link_test.py -e > link_test_sender-{1}.out 2> link_test_sender-{1}.err < /dev/null &'.format(project_path,host_id), pty=False)
-
-	else:
-		fab.sudo('nohup {0}/link_test.py -o {2}> link_test_sender-{1}.out 2> link_test_sender-{1}.err < /dev/null &'.format(project_path,host_id, data_path), pty=False)
-	
-	fab.local('sleep 10')
-	fab.execute(stop_link_test)
-
-	
+def neighbor_sniffer():	
+	with fab.settings(hide('warnings'), hide=True, warn_only=True):
+		host_id=fab.env.hosts.index(fab.env.host)
+		fab.sudo('nohup {0}/link_test.py -o {2}> /tmp/link_test_receiver-{1}.out 2> /tmp/link_test_receiver-{1}.err < /dev/null &'.format(project_path,host_id, data_path), pty=False)
 @fab.task
 def neighbor_trial():
 	host_id=fab.env.hosts.index(fab.env.host)
-	fab.execute(neighbor_test,host_id)
-	
+	fab.execute(neighbor_test,hosts=fab.env.hosts[host_id])
+	print "sender on {}".format(fab.env.hosts[host_id])
+	fab.local("sleep 4")
 
 
 @fab.task
