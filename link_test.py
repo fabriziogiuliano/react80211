@@ -31,6 +31,7 @@ def sniffer_probes(iface,i_time):
 	my_ip=str(netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr'])
 	out_file="{}/link.csv".format(data_path);
 	with open(out_file, "a") as myfile:
+		res_val={}
 		while True:
 			pktlist = scapy.all.sniff(iface=mon_iface, timeout=call_timeout, count=call_count,store=1)
 			for pkt in pktlist:
@@ -48,8 +49,9 @@ def sniffer_probes(iface,i_time):
 							psucc=rx_count/float(curr_pkt['n']);
 							#print "{} : {}/{} {}".format(rx_mac,rx_count,curr_pkt['n'],psucc)
 							print "{} : {}".format(rx_mac,psucc)
-							#rx_count=0
-						myfile.write(out_val+"\n")
+							res_val[str(rx_mac)]=psucc
+							json_val = json.dumps(res_val)
+							myfile.write(json_val+"\n")
 				except (Exception) as err:
 					if debug:
 						print ( "exception", err)           
