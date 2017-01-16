@@ -203,8 +203,8 @@ def update_cw_decision(iface,enable_react,sleep_time,data_path):
                 gross_rate = float(CLAIM_CAPACITY)*float(neigh_list[my_mac]['claim']);
 		
 		[tslot, tx_time_theor, t_rts, t_ack]= txtime_theor('11a',6,20,pkt_size)
-#                busytx2 =  0.002198*float(data_count) + 0.000081*float(rts_count); #how much time the station spent in tx state during the last observation internval
-                busytx2 =  0.002071*float(data_count) + 0.000046*float(rts_count); #how much time the station spent in tx state during the last observation internval
+                busytx2 =  0.002198*float(data_count) + 0.000081*float(rts_count); #how much time the station spent in tx state during the last observation internval
+#                busytx2 =  0.002071*float(data_count) + 0.000046*float(rts_count); #how much time the station spent in tx state during the last observation internval
 		SIFS=16 #usec
 		tslot=9e-6 #usec
                 #freeze2 = dd - busytx2 - cw_/float(2)*tslot*rts_count - 2*SIFS*1e-6; #how long the backoff has been frozen;
